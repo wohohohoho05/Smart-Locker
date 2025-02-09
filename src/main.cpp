@@ -4,6 +4,7 @@
 
 void connectWiFi();
 void sendDataToCloud();
+void onMqttMessage(int messageSize);
 
 // WiFi配置
 // const char* ssid = "USER_1919810";
@@ -45,8 +46,9 @@ void setup() {
   Serial.println("已连接到OneNet平台!");
 
   // 订阅主题（如果需要）
-  // String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post/reply";
-  // mqttClient.subscribe(topic);
+  mqttClient.onMessage(onMqttMessage);
+  String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post/reply";
+  mqttClient.subscribe(topic);
 }
 
 void loop() {
@@ -89,4 +91,21 @@ void sendDataToCloud() {
   mqttClient.endMessage();
 
   Serial.println("数据已发送：" + payload);
+}
+
+void onMqttMessage(int messageSize) {
+  // we received a message, print out the topic and contents
+  Serial.println("Received a message with topic '");
+  Serial.print(mqttClient.messageTopic());
+  Serial.print("', length ");
+  Serial.print(messageSize);
+  Serial.println(" bytes:");
+
+  // use the Stream interface to print the contents
+  while (mqttClient.available()) {
+    Serial.print((char)mqttClient.read());
+  }
+  Serial.println();
+
+  Serial.println();
 }
