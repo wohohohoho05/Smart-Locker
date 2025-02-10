@@ -32,7 +32,7 @@ void setup() {
   
   Serial.begin(9600);
   while (!Serial);
-
+  pinMode(LED_BUILTIN, OUTPUT);
   // 连接WiFi
   connectWiFi();
 
@@ -115,26 +115,29 @@ void onMqttMessage(int messageSize) {
   Serial.println(mqttMessage);
 
   if(topic == set_topic) {
-    Serial.println("received!");
     JSONVar mqttJson = JSON.parse(mqttMessage);
     if (JSON.typeof(mqttJson) == "undefined") {
       Serial.println("Json parse ERROR");
       return;
     }
-    int id = mqttJson["id"];
+    String id = mqttJson["id"];
     bool led = mqttJson["params"]["led"];
     Serial.print("Message id: ");
     Serial.println(id);
     Serial.print("LED: ");
     Serial.println(led);
 
-    // String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set_reply";
-    // String payload = "{\"id\":\"123\", \"version\":\"1.0\", \"params\":{\"led\":{\"value\":";
-    // payload += random(0, 2) ? "false" : "true";
-    // payload += "}}}";
-    // mqttClient.beginMessage(topic);
-    // mqttClient.print(payload);
-    // mqttClient.endMessage();
+    digitalWrite(LED_BUILTIN, led);
+
+    String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set_reply";
+    String payload = "{\"id\":\"";
+    payload += id;
+    payload += "\", \"code\":200, \"msg\":\"success\"}";
+    mqttClient.beginMessage(topic);
+    mqttClient.print(payload);
+    mqttClient.endMessage();
+    
+    Serial.println("数据已发送：" + payload);
   }
 
   Serial.println();
