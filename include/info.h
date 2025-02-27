@@ -1,8 +1,8 @@
 // WiFi配置
-// const char* ssid = "USER_1919810";
-// const char* password = "Ba+2Na=BaNaNa";
-const char* ssid = "2402";
-const char* password = "heyanhua2402";
+const char* ssid = "USER_1919810";
+const char* password = "Ba+2Na=BaNaNa";
+// const char* ssid = "2402";
+// const char* password = "heyanhua2402";
 
 // OneNet MQTT配置 
 const char* mqttServer = "mqtts.heclouds.com";

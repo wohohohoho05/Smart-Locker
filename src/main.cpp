@@ -72,7 +72,7 @@ void sendDataToCloud() {
   String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post";
   
   // 构建JSON数据
-  String payload = "{\"id\":\"123\", \"version\":\"1.0\", \"params\":{\"led\":{\"value\":";
+  String payload = "{\"id\":\"123\", \"version\":\"1.0\", \"params\":{\"door\":{\"value\":";
   payload += random(0, 2) ? "false" : "true";  // 生成随机01
   payload += "}}}";
 
@@ -107,13 +107,13 @@ void onMqttMessage(int messageSize) {
       return;
     }
     String id = mqttJson["id"];
-    bool led = mqttJson["params"]["led"];
+    bool door = mqttJson["params"]["door"];
     Serial.print("Message id: ");
     Serial.println(id);
-    Serial.print("LED: ");
-    Serial.println(led);
+    Serial.print("DOOR: ");
+    Serial.println(door);
 
-    digitalWrite(LED_BUILTIN, led);
+    digitalWrite(LED_BUILTIN, door);
 
     String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set_reply";
     String payload = "{\"id\":\"";
