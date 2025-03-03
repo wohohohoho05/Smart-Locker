@@ -8,6 +8,7 @@ void connectWiFi();
 void sendDataToCloud();
 void onMqttMessage(int messageSize);
 
+// OneNet平台MQTT主题
 String reply_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post/reply";
 String set_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set";
 String get_topic = 	String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/get";
@@ -35,12 +36,11 @@ void setup() {
   while (!mqttClient.connect(mqttServer, mqttPort)) {
     Serial.print("MQTT连接失败!错误代码: ");
     Serial.println(mqttClient.connectError());
-    //while (1);
   }
 
   Serial.println("已连接到OneNet平台!");
 
-  // 订阅主题（如果需要）
+  // 订阅主题
   mqttClient.onMessage(onMqttMessage);
   mqttClient.subscribe(reply_topic);
   mqttClient.subscribe(set_topic);
@@ -50,10 +50,8 @@ void setup() {
 void loop() {
   mqttClient.poll();
 
-  // 示例：每5秒发送一条数据
   static unsigned long lastSend = 0;
   if (millis() - lastSend > 5000) {
-    // sendDataToCloud();
     lastSend = millis();
   }
 }
@@ -72,25 +70,8 @@ void connectWiFi() {
   Serial.println(WiFi.localIP());
 }
 
-void sendDataToCloud() {
-  // 构建主题路径
-  String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post";
-  
-  // 构建JSON数据
-  String payload = "{\"id\":\"123\", \"version\":\"1.0\", \"params\":{\"door\":{\"value\":";
-  payload += random(0, 2) ? "false" : "true";  // 生成随机01
-  payload += "}}}";
-
-  // 发布消息
-  mqttClient.beginMessage(topic);
-  mqttClient.print(payload);
-  mqttClient.endMessage();
-
-  Serial.println("数据已发送：" + payload);
-}
-
 void onMqttMessage(int messageSize) {
-  // we received a message, print out the topic and contents
+  //获取到消息，打印消息主题和消息内容
   Serial.println("Received a message with topic '");
   String topic = mqttClient.messageTopic();
   Serial.print(topic);
@@ -98,13 +79,14 @@ void onMqttMessage(int messageSize) {
   Serial.print(messageSize);
   Serial.println(" bytes:");
 
-  // use the Stream interface to print the contents
+  //获取事件主题
   String mqttMessage = "";
   while (mqttClient.available()) {
     mqttMessage += (char)mqttClient.read();
   }
   Serial.println(mqttMessage);
 
+  //设备属性设置
   if(topic == set_topic) {
     JSONVar mqttJson = JSON.parse(mqttMessage);
     if (JSON.typeof(mqttJson) == "undefined") {
@@ -133,6 +115,7 @@ void onMqttMessage(int messageSize) {
     Serial.println("数据已发送：" + mqttJsonReply);
   }
 
+  //设备属性获取
   if (topic == get_topic) {
     JSONVar mqttJson = JSON.parse(mqttMessage);
     if (JSON.typeof(mqttJson) == "undefined") {
