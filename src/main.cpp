@@ -10,9 +10,13 @@ void onMqttMessage(int messageSize);
 
 String reply_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post/reply";
 String set_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set";
+String get_topic = 	String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/get";
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
+
+bool led_status = false;
+int obj_num = 0;
 
 void setup() {
   
@@ -40,6 +44,7 @@ void setup() {
   mqttClient.onMessage(onMqttMessage);
   mqttClient.subscribe(reply_topic);
   mqttClient.subscribe(set_topic);
+  mqttClient.subscribe(get_topic);
 }
 
 void loop() {
@@ -114,16 +119,48 @@ void onMqttMessage(int messageSize) {
     Serial.println(door);
 
     digitalWrite(LED_BUILTIN, door);
+    led_status = door;
 
     String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set_reply";
-    String payload = "{\"id\":\"";
-    payload += id;
-    payload += "\", \"code\":200, \"msg\":\"success\"}";
+    JSONVar mqttJsonReply;
+    mqttJsonReply["id"] = id;
+    mqttJsonReply["code"] = 200;
+    mqttJsonReply["msg"] = "success";
     mqttClient.beginMessage(topic);
-    mqttClient.print(payload);
+    mqttClient.print(mqttJsonReply);
     mqttClient.endMessage();
     
-    Serial.println("数据已发送：" + payload);
+    Serial.println("数据已发送：" + mqttJsonReply);
+  }
+
+  if (topic == get_topic) {
+    JSONVar mqttJson = JSON.parse(mqttMessage);
+    if (JSON.typeof(mqttJson) == "undefined") {
+      Serial.println("Json parse ERROR");
+      return;
+    }
+    
+    String id = mqttJson["id"];
+    JSONVar params = mqttJson["params"];
+    JSONVar mqttJsonReply;
+    mqttJsonReply["id"] = id;
+    mqttJsonReply["code"] = 200;
+
+    JSONVar data;
+    for (int i = 0; i < params.length(); i ++) {
+      String key = params[i];
+      if (key == "door") {
+        data[key] = led_status;
+      }
+      if (key == "num") {
+        data[key] = random(20);
+      }
+    }
+    mqttJsonReply["data"] = data;
+    String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/get_reply";
+    mqttClient.beginMessage(topic);
+    mqttClient.print(mqttJsonReply);
+    mqttClient.endMessage();
   }
 
   Serial.println();
