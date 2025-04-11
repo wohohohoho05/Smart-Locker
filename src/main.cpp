@@ -5,6 +5,7 @@
 #include<info.h>
 
 void connectWiFi();
+void connectMqtt();
 void sendDataToCloud();
 void onMqttMessage(int messageSize);
 void getDoorStatus();
@@ -20,6 +21,7 @@ MqttClient mqttClient(wifiClient);
 bool led_status = false;
 bool door_status[DOOR_NUM] = {};
 int obj_num = 0;
+int obj_nums[DOOR_NUM] = {};
 
 void setup() {
   
@@ -81,9 +83,11 @@ void connectMqtt() {
 }
 
 void getDoorStatus() {
+  int ind = random(0, DOOR_NUM);
   for (int i = 0; i < DOOR_NUM; i++) {
-    door_status[i] = true;
+    door_status[i] = false;
   }
+  door_status[ind] = true;
 }
 
 void onMqttMessage(int messageSize) {
