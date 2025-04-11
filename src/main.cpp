@@ -7,6 +7,7 @@
 void connectWiFi();
 void sendDataToCloud();
 void onMqttMessage(int messageSize);
+void getDoorStatus();
 
 // OneNet平台MQTT主题
 String reply_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post/reply";
@@ -17,6 +18,7 @@ WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
 bool led_status = false;
+bool door_status[DOOR_NUM] = {};
 int obj_num = 0;
 
 void setup() {
@@ -28,6 +30,37 @@ void setup() {
   connectWiFi();
 
   // 设置MQTT客户端
+  connectMqtt();
+}
+
+void loop() {
+  mqttClient.poll();
+
+  static unsigned long lastSend = 0;
+  //每5秒
+  if (millis() - lastSend > 5000) {
+    lastSend = millis();
+
+    //获取柜门状态
+    getDoorStatus();
+  }
+}
+
+void connectWiFi() {
+  Serial.print("正在连接WiFi ");
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("\nWiFi已连接");
+  Serial.print("IP地址: ");
+  Serial.println(WiFi.localIP());
+}
+
+void connectMqtt() {
   mqttClient.setId(DEVICE_ID);
   mqttClient.setUsernamePassword(PRODUCT_ID, API_KEY);
 
@@ -47,27 +80,10 @@ void setup() {
   mqttClient.subscribe(get_topic);
 }
 
-void loop() {
-  mqttClient.poll();
-
-  static unsigned long lastSend = 0;
-  if (millis() - lastSend > 5000) {
-    lastSend = millis();
+void getDoorStatus() {
+  for (int i = 0; i < DOOR_NUM; i++) {
+    door_status[i] = true;
   }
-}
-
-void connectWiFi() {
-  Serial.print("正在连接WiFi ");
-  WiFi.begin(ssid, password);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  
-  Serial.println("\nWiFi已连接");
-  Serial.print("IP地址: ");
-  Serial.println(WiFi.localIP());
 }
 
 void onMqttMessage(int messageSize) {
