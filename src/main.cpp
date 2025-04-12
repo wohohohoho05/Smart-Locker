@@ -9,17 +9,20 @@ void connectMqtt();
 void sendDataToCloud();
 void onMqttMessage(int messageSize);
 void getDoorStatus();
+void openDoor();
 
 // OneNet平台MQTT主题
+String post_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post";
 String reply_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/post/reply";
 String set_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/set";
 String get_topic = 	String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/get";
+String get_reply_topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/get_reply";
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
 bool led_status = false;
-bool door_status[DOOR_NUM] = {};
+int door_status[DOOR_NUM] = {};
 int obj_num = 0;
 int obj_nums[DOOR_NUM] = {};
 
@@ -83,11 +86,28 @@ void connectMqtt() {
 }
 
 void getDoorStatus() {
+  Serial.println("获取柜门状态...");
   int ind = random(0, DOOR_NUM);
   for (int i = 0; i < DOOR_NUM; i++) {
-    door_status[i] = false;
+    door_status[i] = 0;
   }
-  door_status[ind] = true;
+  door_status[ind] = 1;
+  
+  JSONVar mqttJsonReply;
+  mqttJsonReply["id"] = "1";
+  mqttJsonReply["version"] = "1.0";
+
+  JSONVar params, data, value;
+  for (int i = 0; i < DOOR_NUM; i++) {
+    value[i] = door_status[i];
+  }
+  data["value"] = value;
+  params["doors"] = data;
+  mqttJsonReply["params"] = params;
+  Serial.println(mqttJsonReply);
+  mqttClient.beginMessage(post_topic);
+  mqttClient.print(mqttJsonReply);
+  mqttClient.endMessage();
 }
 
 void onMqttMessage(int messageSize) {
@@ -160,8 +180,7 @@ void onMqttMessage(int messageSize) {
       }
     }
     mqttJsonReply["data"] = data;
-    String topic = String("$sys/") + PRODUCT_ID + "/" + DEVICE_ID + "/thing/property/get_reply";
-    mqttClient.beginMessage(topic);
+    mqttClient.beginMessage(get_reply_topic);
     mqttClient.print(mqttJsonReply);
     mqttClient.endMessage();
   }
